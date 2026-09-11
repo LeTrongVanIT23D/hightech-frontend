@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Image from "next/image";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -346,7 +346,7 @@ export default function CheckoutPage() {
                     className="flex items-center gap-3 bg-surface-light p-2.5 rounded-xl border border-border/50"
                   >
                     <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-surface shrink-0">
-                      <Image src={item.image} alt={item.name} fill className="object-cover" />
+                      <ImageWithFallback src={item.image} alt={item.name} fill className="object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="text-white text-xs font-semibold truncate">{item.name}</h4>

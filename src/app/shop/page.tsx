@@ -7,7 +7,7 @@ import { SlidersHorizontal, X, ChevronDown, LayoutGrid, List, RotateCcw } from "
 import { useAdminStore } from "@/store/adminStore";
 import ProductCard from "@/components/ProductCard";
 import Link from "next/link";
-import Image from "next/image";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import { formatPrice } from "@/lib/utils";
 
 const categoryTabs = ["Tất cả", "Giày", "Áo", "Quần", "Phụ kiện"];
@@ -355,8 +355,8 @@ function ShopContent() {
                   className="flex flex-col sm:flex-row gap-6 p-4 bg-surface rounded-2xl border border-border hover:border-primary/40 transition-colors"
                 >
                   <div className="relative w-full sm:w-48 aspect-square rounded-xl overflow-hidden bg-surface-light shrink-0">
-                    <Image
-                      src={product.images[0]}
+                    <ImageWithFallback
+                      src={product.images?.[0]}
                       alt={product.name}
                       fill
                       className="object-cover"

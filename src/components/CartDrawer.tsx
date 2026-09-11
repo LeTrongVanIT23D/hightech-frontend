@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ShoppingBag, Trash2, Plus, Minus, ArrowRight, ShieldCheck } from "lucide-react";
@@ -91,7 +91,7 @@ export default function CartDrawer() {
                     className="flex gap-4 p-3 bg-surface-light rounded-xl border border-border/50 relative group"
                   >
                     <div className="relative w-20 h-20 rounded-lg overflow-hidden bg-surface shrink-0">
-                      <Image
+                      <ImageWithFallback
                         src={item.image}
                         alt={item.name}
                         fill

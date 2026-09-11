@@ -1,4 +1,4 @@
-import Image from "next/image";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import Link from "next/link";
 import { ArrowRight, Calendar, User, Tag } from "lucide-react";
 
@@ -76,7 +76,7 @@ export default function BlogListPage() {
             >
               <div>
                 <div className="relative aspect-[16/10] bg-surface-light overflow-hidden">
-                  <Image
+                  <ImageWithFallback
                     src={post.image}
                     alt={post.title}
                     fill

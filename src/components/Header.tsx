@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -266,8 +266,8 @@ export default function Header() {
                           className="flex items-center gap-4 p-2 rounded-xl hover:bg-surface transition-colors group"
                         >
                           <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-surface shrink-0">
-                            <Image
-                              src={item.images[0]}
+                            <ImageWithFallback
+                              src={item.images?.[0]}
                               alt={item.name}
                               fill
                               className="object-cover"

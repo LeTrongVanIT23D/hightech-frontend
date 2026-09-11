@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import { Suspense } from "react";
 import { CheckCircle2, Package, QrCode, ArrowRight, ShieldCheck } from "lucide-react";
 import { useOrderStore } from "@/store/orderStore";
@@ -79,7 +79,7 @@ function OrderSuccessContent() {
                     className="flex items-center gap-4 bg-surface-light p-3 rounded-xl border border-border/50"
                   >
                     <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-surface shrink-0">
-                      <Image src={item.image} alt={item.name} fill className="object-cover" />
+                      <ImageWithFallback src={item.image} alt={item.name} fill className="object-cover" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <h5 className="text-white text-xs font-semibold truncate">{item.name}</h5>

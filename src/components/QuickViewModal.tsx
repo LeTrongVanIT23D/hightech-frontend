@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Star, ShoppingBag, Heart, Check, ArrowRight } from "lucide-react";
@@ -71,9 +71,9 @@ export default function QuickViewModal() {
           </button>
 
           {/* Left: Image */}
-          <div className="relative aspect-square md:aspect-auto bg-surface-light">
-            <Image
-              src={product.images[0]}
+          <div className="relative aspect-square md:aspect-auto md:min-h-[400px] bg-surface-light">
+            <ImageWithFallback
+              src={product.images?.[0]}
               alt={product.name}
               fill
               className="object-cover"

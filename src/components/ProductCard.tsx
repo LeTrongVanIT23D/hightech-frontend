@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ShoppingBag, Heart, Eye } from "lucide-react";
@@ -65,9 +65,9 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
     >
       <Link href={`/product/${product.id}`} className="block" id={`product-card-${product.id}`}>
         {/* Image Frame */}
-        <div className="relative aspect-square bg-surface-light rounded-2xl overflow-hidden mb-3 border border-border/40 group-hover:border-primary/50 transition-colors">
-          <Image
-            src={product.images[0]}
+        <div className="relative aspect-square w-full bg-surface-light rounded-2xl overflow-hidden mb-3 border border-border/40 group-hover:border-primary/50 transition-colors">
+          <ImageWithFallback
+            src={product.images?.[0]}
             alt={product.name}
             fill
             className="object-cover transition-transform duration-700 group-hover:scale-110"

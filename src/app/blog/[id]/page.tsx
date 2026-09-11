@@ -1,4 +1,4 @@
-import Image from "next/image";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import Link from "next/link";
 import { use } from "react";
 import { Calendar, User, ArrowLeft, Share2 } from "lucide-react";
@@ -43,7 +43,7 @@ export default function BlogDetailPage({
         </div>
 
         <div className="relative aspect-[16/9] rounded-2xl overflow-hidden bg-surface-light mb-10 border border-border">
-          <Image src={post.image} alt={post.title} fill className="object-cover" priority />
+          <ImageWithFallback src={post.image} alt={post.title} fill className="object-cover" priority />
         </div>
 
         <div className="prose prose-invert max-w-none text-muted space-y-6 leading-relaxed text-sm md:text-base">

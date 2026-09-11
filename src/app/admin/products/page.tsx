@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import { Plus, Search, Edit, Trash2, X, Check } from "lucide-react";
 import { useAdminStore } from "@/store/adminStore";
 import { formatPrice } from "@/lib/utils";
@@ -148,7 +148,7 @@ export default function AdminProductsPage() {
                 <tr key={product.id} className="hover:bg-surface-light/40 transition-colors">
                   <td className="p-4">
                     <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-surface-light">
-                      <Image src={product.images[0]} alt={product.name} fill className="object-cover" />
+                      <ImageWithFallback src={product.images?.[0]} alt={product.name} fill className="object-cover" />
                     </div>
                   </td>
                   <td className="p-4 font-semibold text-sm">{product.name}</td>

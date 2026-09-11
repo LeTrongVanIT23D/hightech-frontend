@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -74,7 +74,7 @@ export default function HomePage() {
       {/* ─── 1. HERO BANNER ─────────────────────────────────────────── */}
       <section className="relative h-screen w-full overflow-hidden">
         {/* Background image */}
-        <Image
+        <ImageWithFallback
           src="https://images.unsplash.com/photo-1556906781-9a412961c28c?w=1600"
           alt="Hero background – sports equipment"
           fill
@@ -168,7 +168,7 @@ export default function HomePage() {
                 href={`/shop?category=${cat.slug}`}
                 className="block h-full w-full"
               >
-                <Image
+                <ImageWithFallback
                   src={cat.image}
                   alt={cat.name}
                   fill
@@ -244,9 +244,9 @@ export default function HomePage() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.8, ease: "easeOut" }}
-            className="relative aspect-[4/5] md:aspect-auto"
+            className="relative aspect-[4/5] md:aspect-auto md:min-h-[480px]"
           >
-            <Image
+            <ImageWithFallback
               src="https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800"
               alt="Bộ sưu tập thể thao 2025"
               fill

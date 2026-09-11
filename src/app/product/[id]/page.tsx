@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, use, useEffect } from "react";
-import Image from "next/image";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -178,8 +178,8 @@ export default function ProductDetailPage({
             transition={{ duration: 0.5 }}
           >
             <div className="group relative aspect-square overflow-hidden rounded-2xl bg-surface-light border border-border/50">
-              <Image
-                src={product.images[selectedImage]}
+              <ImageWithFallback
+                src={product.images?.[selectedImage] || product.images?.[0]}
                 alt={product.name}
                 fill
                 priority
@@ -214,7 +214,7 @@ export default function ProductDetailPage({
                         : "border-transparent opacity-60 hover:opacity-100"
                     }`}
                   >
-                    <Image
+                    <ImageWithFallback
                       src={img}
                       alt={`${product.name} ${idx + 1}`}
                       fill
@@ -481,7 +481,7 @@ export default function ProductDetailPage({
             <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-surface-light hidden sm:block">
-                  <Image src={product.images[0]} alt={product.name} fill className="object-cover" />
+                  <ImageWithFallback src={product.images?.[0]} alt={product.name} fill className="object-cover" />
                 </div>
                 <div>
                   <h4 className="text-white text-sm font-semibold truncate max-w-xs">{product.name}</h4>

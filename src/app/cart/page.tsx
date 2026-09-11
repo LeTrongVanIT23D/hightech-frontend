@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import ImageWithFallback from '@/components/ImageWithFallback';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Minus, Plus, X, ShoppingBag, ArrowLeft, Shield, Truck, RotateCcw } from 'lucide-react';
@@ -123,7 +123,7 @@ export default function CartPage() {
                   <div className="bg-surface rounded-xl p-4 sm:p-5 flex gap-4 sm:gap-5 border border-border/50 hover:border-border transition-colors">
                     {/* Product Image */}
                     <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-surface-light shrink-0">
-                      <Image
+                      <ImageWithFallback
                         src={item.image}
                         alt={item.name}
                         fill

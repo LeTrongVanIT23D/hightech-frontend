@@ -1,4 +1,4 @@
-import Image from "next/image";
+import ImageWithFallback from "@/components/ImageWithFallback";
 import Link from "next/link";
 import { ShieldCheck, Zap, Award, Users } from "lucide-react";
 
@@ -70,7 +70,7 @@ export default function AboutPage() {
             </Link>
           </div>
           <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-surface-light">
-            <Image
+            <ImageWithFallback
               src="https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=800"
               alt="HIGHTECH Sports Story"
               fill

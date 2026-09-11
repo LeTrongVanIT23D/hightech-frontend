@@ -22,8 +22,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className="h-full antialiased" data-scroll-behavior="smooth">
-      <body className="min-h-full flex flex-col bg-background text-foreground font-sans">
+    <html lang="vi" className="h-full antialiased" data-scroll-behavior="smooth" suppressHydrationWarning>
+      <body className="min-h-full flex flex-col bg-background text-foreground font-sans" suppressHydrationWarning>
         <AuthGuard>
           <Header />
           <main className="flex-1">{children}</main>

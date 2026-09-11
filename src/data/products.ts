@@ -105,7 +105,7 @@ export const products: Product[] = [
     price: 3800000,
     images: [
       "https://images.unsplash.com/photo-1600185365926-3a2ce3cdb9eb?w=800",
-      "https://images.unsplash.com/photo-1584735175315-9d5df23be703?w=800",
+      "https://images.unsplash.com/photo-1515955656352-a1fa3ffcd111?w=800",
     ],
     category: "Giày",
     sizes: ["39", "40", "41", "42", "43", "44", "45"],

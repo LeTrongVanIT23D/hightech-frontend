@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
+import ImageWithFallback from '@/components/ImageWithFallback';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -104,7 +104,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex">
       {/* Left Side - Brand Image (Hidden on mobile) */}
       <div className="hidden lg:flex lg:w-1/2 relative">
-        <Image
+        <ImageWithFallback
           src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200"
           alt="Hightech Sports"
           fill
