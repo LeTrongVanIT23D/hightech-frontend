@@ -1,0 +1,38 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: hightech-sqlserver
+    restart: always
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourStrong@Password123
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - hightech-network
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hightech-api
+    restart: always
+    depends_on:
+      - sqlserver
+    ports:
+      - "5000:86"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HightechDb;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True;MultipleActiveResultSets=true;
+    networks:
+      - hightech-network
+
+networks:
+  hightech-network:
+    driver: bridge
+
+volumes:
+  sqlserver-data:
