@@ -3,9 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "hightech-api"
-        // Điền IP VPS Production của bạn tại đây (mặc định lấy từ mẫu lab)
-        SERVER_HOST = "103.20.96.174"
-        SERVER_USER = "root"
+        SERVER_HOST = "localhost"
     }
 
     stages {
@@ -30,7 +28,7 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-cred',
                     usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     
-                    sh 'docker build -t docker.io/$DOCKER_USER/$IMAGE_NAME:latest ./backend'
+                    sh 'docker build -t docker.io/$DOCKER_USER/$IMAGE_NAME:latest -t $IMAGE_NAME:latest ./backend'
                 }
             }
         }
@@ -46,44 +44,37 @@ pipeline {
                     if docker push "docker.io/$DOCKER_USER/$IMAGE_NAME:latest"; then
                         echo "Đã đẩy Docker Image lên Docker Hub thành công!"
                     else
-                        echo "Lưu ý: Docker Hub từ chối Push (Do Access Token hiện tại chỉ có quyền Read, cần tạo Token mới với quyền Read & Write trên hub.docker.com). Bỏ qua lỗi này để tiếp tục bước Deploy Server!"
+                        echo "Lưu ý: Docker Hub từ chối Push (Do Access Token hiện tại chỉ có quyền Read, cần tạo Token mới với quyền Read & Write trên hub.docker.com). Bỏ qua lỗi này để tiếp tục bước Deploy!"
                     fi
                     '''
                 }
             }
         }
 
-        stage('Deploy Server') {
+        stage('Deploy Localhost') {
             steps {
-                echo "Đang triển khai lên Production Server qua SSH..."
-                withCredentials([
-                    usernamePassword(credentialsId: 'dockerhub-cred',
-                        usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS'),
-                    string(credentialsId: 'db-conn', variable: 'DB_CONN'),
-                    file(credentialsId: 'docker-compose-file', variable: 'DOCKER_COMPOSE_PATH'),
-                    sshUserPrivateKey(credentialsId: 'server-ssh-key', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')
-                ]) {
-                    sh '''
-                    # Tạo thư mục project trên remote server
-                    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=15 "$SSH_USER@$SERVER_HOST" "mkdir -p ~/project" || true
+                echo "Đang triển khai Backend API và Database lên môi trường Localhost..."
+                sh '''
+                cd backend
+                if command -v docker-compose >/dev/null 2>&1; then
+                    DOCKER_COMPOSE_BIN="docker-compose"
+                else
+                    DOCKER_COMPOSE_BIN="docker compose"
+                fi
 
-                    # Copy docker-compose file lên server
-                    scp -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=15 "$DOCKER_COMPOSE_PATH" "$SSH_USER@$SERVER_HOST:~/project/docker-compose.yml" || true
+                echo "Dừng container cũ nếu đang chạy..."
+                $DOCKER_COMPOSE_BIN down || true
 
-                    # SSH thực hiện pull image mới và chạy container
-                    ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=15 "$SSH_USER@$SERVER_HOST" "
-                    cd ~/project && \
-                    echo \\"DB_CONNECTION_STRING=$DB_CONN\\" > .env && \
-                    echo \\"DOCKER_USER=$DOCKER_USER\\" >> .env && \
-                    echo \\"MSSQL_SA_PASSWORD=YourStrong@Password123\\" >> .env && \
-                    echo \\"$DOCKER_PASS\\" | docker login -u $DOCKER_USER --password-stdin && \
-                    docker compose --env-file .env pull || true && \
-                    docker compose --env-file .env down || true && \
-                    docker compose --env-file .env up -d || true && \
-                    docker image prune -f || true
-                    " || echo "Lưu ý: Nếu chưa cấu hình IP Server Production thật, pipeline vẫn hoàn tất thành công các bước Build và Deploy!"
-                    '''
-                }
+                echo "Khởi chạy container Backend API và Database mới..."
+                $DOCKER_COMPOSE_BIN up -d
+
+                echo "=========================================================="
+                echo "Triển khai Localhost hoàn tất thành công!"
+                echo "Swagger API: http://localhost:5000/swagger"
+                echo "Health Check: http://localhost:5000/health"
+                echo "=========================================================="
+                docker ps | grep -E "hightech" || true
+                '''
             }
         }
     }

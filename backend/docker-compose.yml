@@ -15,6 +15,7 @@ services:
       - hightech-network
 
   api:
+    image: hightech-api:latest
     build:
       context: .
       dockerfile: Dockerfile
@@ -27,6 +28,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=HightechDb;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=0
     networks:
       - hightech-network
 

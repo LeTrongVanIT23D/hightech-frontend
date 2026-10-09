@@ -22,7 +22,7 @@ COPY --from=build /app/publish .
 
 ENV ASPNETCORE_URLS=http://+:86
 ENV DOTNET_RUNNING_IN_CONTAINER=true
-ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=0
 
 # Dọn dẹp file không cần thiết
 RUN find /app -name "*.pdb" -delete 2>/dev/null || true && \
