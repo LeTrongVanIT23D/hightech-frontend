@@ -231,7 +231,7 @@ pipeline {
                 }
             }
             steps {
-                echo "🚀 [Stage 7] Đang triển khai tự động lên VPS Production từ xa..."
+                echo "🚀 [Stage 7] Đang triển khai toàn bộ hệ thống (Backend + Frontend + Database) lên VPS..."
                 script {
                     def vpsHost = (params.VPS_HOST ?: "").trim()
                     echo "🎯 Địa chỉ máy chủ VPS: ${vpsHost}"
@@ -246,25 +246,85 @@ pipeline {
                             if (isUnix()) {
                                 sh """
                                 chmod 600 "\$SSH_KEY"
-                                ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=no "\$sshUser@${vpsHost}" "mkdir -p /root/hightech-project/backend"
-                                scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no backend/docker-compose.yml "\$sshUser@${vpsHost}:/root/hightech-project/backend/docker-compose.yml"
+
+                                echo "═══════════════════════════════════════════"
+                                echo "📁 1. Tạo cấu trúc thư mục trên VPS..."
+                                echo "═══════════════════════════════════════════"
+                                ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=no "\$sshUser@${vpsHost}" \\
+                                    "mkdir -p /root/hightech-project/backend"
+
+                                echo "═══════════════════════════════════════════"
+                                echo "📤 2. Đồng bộ file cấu hình Docker lên VPS..."
+                                echo "═══════════════════════════════════════════"
+                                # Gửi docker-compose.yml của Backend (API + SQL Server)
+                                scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no \\
+                                    backend/docker-compose.yml \\
+                                    "\$sshUser@${vpsHost}:/root/hightech-project/backend/docker-compose.yml"
+
+                                # Gửi docker-compose.yml của Frontend (Next.js)
+                                scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no \\
+                                    docker-compose.yml \\
+                                    "\$sshUser@${vpsHost}:/root/hightech-project/docker-compose.yml"
+
+                                # Gửi Dockerfile Frontend để VPS build
+                                scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no \\
+                                    Dockerfile \\
+                                    "\$sshUser@${vpsHost}:/root/hightech-project/Dockerfile"
+
+                                echo "═══════════════════════════════════════════"
+                                echo "🗃️ 3. Khởi động Backend API + SQL Server..."
+                                echo "═══════════════════════════════════════════"
                                 ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=no "\$sshUser@${vpsHost}" '''
+                                    set -e
                                     cd /root/hightech-project/backend
                                     if command -v docker-compose >/dev/null 2>&1; then
                                         DOCKER_BIN="docker-compose"
                                     else
                                         DOCKER_BIN="docker compose"
                                     fi
-                                    \$DOCKER_BIN pull || true
+                                    echo "Pull image mới nhất từ Docker Hub..."
+                                    \$DOCKER_BIN pull 2>/dev/null || true
+                                    echo "Dừng container Backend cũ..."
                                     \$DOCKER_BIN down || true
+                                    echo "Khởi động Backend API + SQL Server..."
                                     \$DOCKER_BIN up -d
+                                    echo "✅ Backend + SQL Server đang chạy!"
                                 '''
+
+                                echo "═══════════════════════════════════════════"
+                                echo "🖥️ 4. Khởi động Frontend Next.js..."
+                                echo "═══════════════════════════════════════════"
+                                ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=no "\$sshUser@${vpsHost}" """
+                                    set -e
+                                    cd /root/hightech-project
+                                    if command -v docker-compose >/dev/null 2>&1; then
+                                        DOCKER_BIN="docker-compose"
+                                    else
+                                        DOCKER_BIN="docker compose"
+                                    fi
+                                    echo "Dừng container Frontend cũ..."
+                                    \\\$DOCKER_BIN down || true
+                                    echo "Build + Khởi động Frontend Next.js..."
+                                    \\\$DOCKER_BIN up -d --build
+                                    echo "✅ Frontend Next.js đang chạy!"
+                                """
+
+                                echo "═══════════════════════════════════════════"
+                                echo "🔍 5. Kiểm tra tất cả container đang chạy..."
+                                echo "═══════════════════════════════════════════"
+                                ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=no "\$sshUser@${vpsHost}" \\
+                                    "docker ps --format 'table {{.Names}}\\t{{.Status}}\\t{{.Ports}}'"
                                 """
                             }
-                            echo "🎉 Triển khai VPS thành công! Swagger: http://${vpsHost}:5000/swagger"
+
+                            echo "🎉 Triển khai VPS thành công toàn hệ thống!"
+                            echo "   🖥️  Frontend:    http://${vpsHost}:3000"
+                            echo "   📚  Swagger API: http://${vpsHost}:5000/swagger"
+                            echo "   💚  Health API:  http://${vpsHost}:5000/health"
                         }
                     } catch (Exception e) {
                         echo "⚠️ Quá trình Deploy VPS gặp cảnh báo: ${e.message}"
+                        echo "Vui lòng kiểm tra lại địa chỉ VPS_HOST hoặc quyền truy cập 'vps-ssh-key'."
                     }
                 }
             }
@@ -285,10 +345,12 @@ pipeline {
                 if (vpsHost != "" && (params.DEPLOY_TO_VPS == true)) {
                     vpsHtmlBlock = """
                         <hr style="margin: 6px 0; border: 0; border-top: 1px dashed #cbd5e1;"/>
-                        <div style="font-size: 13px; font-weight: bold; color: #1e3a8a; margin-bottom: 4px;">🖥️ VPS PRODUCTION (${vpsHost})</div>
+                        <div style="font-size: 13px; font-weight: bold; color: #1e3a8a; margin-bottom: 4px;">🖥️ VPS PRODUCTION — CHẠY 24/7 (${vpsHost})</div>
                         <div style="font-size: 13px; line-height: 1.8;">
-                            📚 <b>VPS Swagger:</b> <a href="http://${vpsHost}:5000/swagger" target="_blank" style="color: #2563eb; font-weight: bold; text-decoration: underline;">http://${vpsHost}:5000/swagger</a><br/>
-                            💚 <b>VPS Health:</b> <a href="http://${vpsHost}:5000/health" target="_blank" style="color: #4f46e5; text-decoration: underline;">http://${vpsHost}:5000/health</a>
+                            🌐 <b>Frontend Web:</b> <a href="http://${vpsHost}:3000" target="_blank" style="color: #d97706; font-weight: bold; text-decoration: underline;">http://${vpsHost}:3000</a><br/>
+                            📚 <b>Swagger API:</b> <a href="http://${vpsHost}:5000/swagger" target="_blank" style="color: #2563eb; font-weight: bold; text-decoration: underline;">http://${vpsHost}:5000/swagger</a><br/>
+                            💚 <b>Health Check:</b> <a href="http://${vpsHost}:5000/health" target="_blank" style="color: #4f46e5; text-decoration: underline;">http://${vpsHost}:5000/health</a><br/>
+                            🔑 <b>Trang Admin:</b> <a href="http://${vpsHost}:3000/admin" target="_blank" style="color: #dc2626; text-decoration: underline;">http://${vpsHost}:3000/admin</a>
                         </div>
                     """
                 }
@@ -317,9 +379,11 @@ pipeline {
                 def vpsLogSummary = ""
                 if (vpsHost != "" && (params.DEPLOY_TO_VPS == true)) {
                     vpsLogSummary = """
- 🖥️ MÔI TRƯỜNG MÁY CHỦ VPS (${vpsHost}):
-    👉 Swagger VPS:        http://${vpsHost}:5000/swagger
-    👉 Health Check VPS:   http://${vpsHost}:5000/health
+ 🖥️ MÔI TRƯỜNG MÁY CHỦ VPS — CHẠY 24/7 (${vpsHost}):
+    👉 Frontend Web:       http://${vpsHost}:3000
+    👉 Trang Admin:        http://${vpsHost}:3000/admin
+    👉 Swagger API:        http://${vpsHost}:5000/swagger
+    👉 Health Check:       http://${vpsHost}:5000/health
 """
                 }
 
