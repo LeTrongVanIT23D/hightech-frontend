@@ -242,6 +242,10 @@ Vào **Dashboard** $\rightarrow$ **Manage Jenkins** $\rightarrow$ **Credentials*
 
 | Lỗi gặp phải | Nguyên nhân gốc rễ | Giải pháp đã áp dụng thành công |
 |---|---|---|
+| **Build xong không hiện link onrender.com** | `Jenkinsfile` cũ chỉ có stage `Deploy Localhost`, không có stage deploy Render và không có lệnh cập nhật `currentBuild.description` hay in banner Render ra Console Output. | Thêm `stage('Deploy to Render')` và khối `post { always { ... } }`. Tự động gán link vào `currentBuild.description` hiển thị trực tiếp ở cột lịch sử Build và in banner nổi bật ra Console. |
+| **Jenkins không hiển thị hyperlink có thể click được (hiển thị thẻ HTML thô)** | Jenkins mặc định bật cơ chế bảo mật hạn chế định dạng (Markup Formatter là Plain Text). | Vào **Manage Jenkins** $\rightarrow$ **Security** $\rightarrow$ **Markup Formatter** $\rightarrow$ Đổi sang **Safe HTML** $\rightarrow$ **Save**. |
+| **Jenkins không tự động build khi commit code** | `Jenkinsfile` chưa khai báo khối `triggers { githubPush(); pollSCM('H/5 * * * *') }`. | Thêm bộ trigger tự động nhận Webhook từ GitHub và cơ chế dự phòng Poll SCM mỗi 5 phút. |
+| **Lỗi Port trên Render (`Port binding failed` / `502 Bad Gateway`)** | ASP.NET Core bị cấu hình cố định nghe cổng 86 qua `ASPNETCORE_URLS=http://+:86` trong khi Render yêu cầu cổng động qua biến môi trường `PORT=10000`. | Cập nhật `Program.cs` tự động đọc biến môi trường `PORT` (`builder.WebHost.UseUrls($"http://0.0.0.0:{renderPort}")`) và bổ sung `EXPOSE 86 10000` trong Dockerfile. |
 | `authentication required - access token has insufficient scopes` | Token Docker Hub được tạo với quyền **Read-only**, chỉ cho phép pull, bị từ chối khi thực hiện `docker push`. | Thêm khối điều kiện kiểm tra trong `Jenkinsfile`: Thông báo cảnh báo rõ ràng và **không làm fail pipeline**, tiếp tục chuyển sang bước Deploy. |
 | `CultureNotFoundException: Only invariant culture is supported` | Dockerfile đặt `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`, khiến thư viện `Microsoft.Data.SqlClient` không đọc được Collation bảng mã của SQL Server. | Đổi thành `DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=0` trong cả `backend/Dockerfile` và `docker-compose.yml`. |
 | `failed to bind host port 0.0.0.0:1433/5000: address already in use` | Tiến trình container cũ trên Windows Docker Desktop vẫn giữ cổng và tự khởi động lại do chính sách `restart: always`. | Dùng lệnh `docker rm -f hightech-api hightech-sqlserver` trên máy chủ Windows để giải phóng cổng hoàn toàn. |
@@ -249,7 +253,33 @@ Vào **Dashboard** $\rightarrow$ **Manage Jenkins** $\rightarrow$ **Credentials*
 
 ---
 
-## 7. HƯỚNG DẪN MỞ RỘNG: CHUYỂN SANG VPS PRODUCTION TỪ XA
+## 7. HƯỚNG DẪN TRIỂN KHAI LÊN CLOUD RENDER (RENDER.COM)
+
+### 7.1 Cấu trúc Blueprint `render.yaml`
+Dự án đã được tích hợp sẵn file chuẩn [render.yaml](./render.yaml). Khi đưa lên Render:
+1. Vào [render.com](https://render.com) $\rightarrow$ Đăng nhập bằng GitHub.
+2. Bấm **New +** $\rightarrow$ Chọn **Blueprint**.
+3. Chọn repo `LeTrongVanIT23D/hightech-frontend` (hoặc tên repo của bạn) $\rightarrow$ Render sẽ tự động đọc file `render.yaml` và cấu hình cả Backend API và Frontend.
+
+### 7.2 Lấy Render Deploy Hook để Jenkins tự động kích hoạt
+1. Trên giao diện Render Dashboard, bấm vào Web Service của bạn (ví dụ: `hightech-api`).
+2. Vào tab **Settings** $\rightarrow$ Cuộn xuống mục **Deploy Hook**.
+3. Bấm **Create Deploy Hook** (hoặc copy đường link có dạng: `https://api.render.com/deploy/srv-xxxxxxx?key=yyyyyyy`).
+4. Khi chạy Jenkins Job:
+   - Chọn **Build with Parameters** $\rightarrow$ Dán link Deploy Hook vào ô `RENDER_DEPLOY_HOOK`.
+   - Hoặc gán trực tiếp vào biến môi trường trong Jenkins Pipeline.
+
+### 7.3 Bật hiển thị Link Onrender trên Jenkins Dashboard
+Để link `.onrender.com` hiển thị dạng nút bấm / link xanh có thể click chuột ngay trên trang chủ Jenkins:
+1. Vào **Dashboard** $\rightarrow$ **Manage Jenkins** $\rightarrow$ **Security**.
+2. Tìm đến mục **Markup Formatter**.
+3. Đổi từ `Plain Text` sang **`Safe HTML`**.
+4. Bấm **Save**.
+5. Mỗi lần Build xong, ngay dưới mã số Build `#1`, `#2`, ... sẽ hiện một khung thông tin màu xanh chứa link `onrender.com` và `swagger` sẵn sàng click!
+
+---
+
+## 8. HƯỚNG DẪN MỞ RỘNG: CHUYỂN SANG VPS PRODUCTION TỪ XA
 
 Nếu sau này bạn có VPS riêng với IP tĩnh (ví dụ `103.20.96.174`), bạn chỉ cần thực hiện 2 thao tác đơn giản:
 

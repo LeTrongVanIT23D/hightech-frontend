@@ -28,7 +28,7 @@ ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=0
 RUN find /app -name "*.pdb" -delete 2>/dev/null || true && \
     find /app -name "*.xml" -delete 2>/dev/null || true
 
-EXPOSE 86
+EXPOSE 86 10000
 
 # Khởi chạy ứng dụng
 ENTRYPOINT ["dotnet", "Hightech.Api.dll"]

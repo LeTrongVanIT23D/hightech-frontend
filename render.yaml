@@ -1,0 +1,35 @@
+services:
+  # =========================================================================
+  # 1. HIGHTECH BACKEND WEB API (ASP.NET Core 8 Web API + Swagger)
+  # =========================================================================
+  - type: web
+    name: hightech-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: singapore
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: DOTNET_SYSTEM_GLOBALIZATION_INVARIANT
+        value: "0"
+
+  # =========================================================================
+  # 2. HIGHTECH FRONTEND (Next.js 15 App Router)
+  # =========================================================================
+  - type: web
+    name: hightech-frontend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    region: singapore
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: NEXT_PUBLIC_API_URL
+        value: https://hightech-api.onrender.com

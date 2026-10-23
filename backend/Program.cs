@@ -8,6 +8,13 @@ using Hightech.Api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Tự động nhận diện cổng PORT khi chạy trên môi trường Cloud như Render
+var renderPort = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrEmpty(renderPort))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{renderPort}");
+}
+
 // 1. Cấu hình Database EF Core với SQL Server
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? "Server=localhost,1433;Database=HightechDb;User Id=sa;Password=YourStrong@Password123;TrustServerCertificate=True;MultipleActiveResultSets=true;";
