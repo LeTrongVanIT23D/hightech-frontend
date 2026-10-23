@@ -2,12 +2,16 @@ pipeline {
     agent any
 
     parameters {
+        string(name: 'SERVER_IP', 
+               defaultValue: '127.0.0.1', 
+               description: 'Địa chỉ IP của máy bạn để tạo link truy cập trực tiếp (Mặc định: 127.0.0.1)')
+
         string(name: 'VPS_HOST', 
                defaultValue: '', 
-               description: 'Địa chỉ IP hoặc tên miền VPS của bạn (Ví dụ: 103.20.96.174 - nếu có, Jenkins sẽ tự SSH và deploy sang VPS)')
+               description: 'Địa chỉ IP hoặc tên miền VPS của bạn (Ví dụ: 103.20.96.174 - bỏ trống nếu chưa có VPS)')
 
         booleanParam(name: 'DEPLOY_TO_VPS', 
-                     defaultValue: true, 
+                     defaultValue: false, 
                      description: 'Kích hoạt triển khai lên VPS qua SSH Credential vps-ssh-key')
 
         string(name: 'RENDER_SERVICE_URL', 
@@ -20,7 +24,7 @@ pipeline {
 
         string(name: 'RENDER_DEPLOY_HOOK', 
                defaultValue: '', 
-               description: 'Render Deploy Hook URL (Tùy chọn: Lấy trong Settings -> Deploy Hook trên Render Dashboard để Jenkins kích hoạt Render tự động deploy)')
+               description: 'Render Deploy Hook URL (Tùy chọn: Lấy trong Settings -> Deploy Hook trên Render Dashboard)')
 
         booleanParam(name: 'TRIGGER_RENDER_DEPLOY', 
                      defaultValue: true, 
@@ -46,7 +50,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "hightech-api"
-        SERVER_HOST = "localhost"
+        DEFAULT_SERVER_IP = "127.0.0.1"
         DEFAULT_RENDER_URL = "https://hightech-api.onrender.com"
     }
 
@@ -189,7 +193,6 @@ pipeline {
                     echo "🔗 Target Render URL: ${renderUrl}"
                     echo "----------------------------------------------------------"
 
-                    // 1. Kích hoạt Render Deploy Hook nếu người dùng cung cấp
                     if (deployHook != "") {
                         echo "📡 Đang kích hoạt Render Deploy qua Webhook Deploy Hook..."
                         try {
@@ -202,27 +205,14 @@ pipeline {
                         } catch (Exception e) {
                             echo "⚠️ Lỗi khi gọi Render Deploy Hook: ${e.message}"
                         }
-                    } else {
-                        echo "ℹ️ [Thông báo Deploy Hook]: Chưa cung cấp RENDER_DEPLOY_HOOK."
-                        echo "   - Nếu dịch vụ Render của bạn đã bật tính năng 'Auto-Deploy' từ GitHub, Render sẽ TỰ ĐỘNG nhận commit mới."
                     }
 
-                    // 2. Kiểm tra trạng thái phản hồi HTTP của link Render
-                    echo "🔍 Đang kiểm tra kết nối tới ${renderUrl}/health..."
+                    // Kiểm tra kết nối tới Render
                     try {
                         if (isUnix()) {
                             sh """
-                            HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 "${renderUrl}/health" || echo "000")
+                            HTTP_STATUS=\$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${renderUrl}/health" || echo "000")
                             echo "HTTP Status code từ Render Health Check: \$HTTP_STATUS"
-                            if [ "\$HTTP_STATUS" = "200" ]; then
-                                echo "🟢 Dịch vụ Render đang HOẠT ĐỘNG HOÀN HẢO (HTTP 200)!"
-                            else
-                                echo "🟡 Render đang khởi động lại (Spin up) hoặc đang deploy phiên bản mới..."
-                            fi
-                            """
-                        } else {
-                            bat """
-                            curl -s -o NUL -w "Render HTTP Status: %%{http_code}\\n" --max-time 15 "${renderUrl}/health" || echo Render is starting...
                             """
                         }
                     } catch (Exception e) {
@@ -235,15 +225,15 @@ pipeline {
         stage('Deploy to VPS') {
             when {
                 expression { 
-                    def host = (params.VPS_HOST ?: env.VPS_HOST ?: "").trim()
-                    def shouldDeploy = (params.DEPLOY_TO_VPS != null) ? params.DEPLOY_TO_VPS : true
+                    def host = (params.VPS_HOST ?: "").trim()
+                    def shouldDeploy = (params.DEPLOY_TO_VPS != null) ? params.DEPLOY_TO_VPS : false
                     return shouldDeploy && host != ""
                 }
             }
             steps {
                 echo "🚀 [Stage 7] Đang triển khai tự động lên VPS Production từ xa..."
                 script {
-                    def vpsHost = (params.VPS_HOST ?: env.VPS_HOST ?: "").trim()
+                    def vpsHost = (params.VPS_HOST ?: "").trim()
                     echo "🎯 Địa chỉ máy chủ VPS: ${vpsHost}"
 
                     try {
@@ -255,16 +245,9 @@ pipeline {
 
                             if (isUnix()) {
                                 sh """
-                                # Cấp quyền đọc bảo mật cho file SSH Private Key tạm
                                 chmod 600 "\$SSH_KEY"
-
-                                echo "1. Tạo thư mục chứa dự án trên VPS..."
                                 ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=no "\$sshUser@${vpsHost}" "mkdir -p /root/hightech-project/backend"
-
-                                echo "2. Đồng bộ file docker-compose.yml sang VPS..."
                                 scp -i "\$SSH_KEY" -o StrictHostKeyChecking=no backend/docker-compose.yml "\$sshUser@${vpsHost}:/root/hightech-project/backend/docker-compose.yml"
-
-                                echo "3. Khởi động các container trên VPS..."
                                 ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=no "\$sshUser@${vpsHost}" '''
                                     cd /root/hightech-project/backend
                                     if command -v docker-compose >/dev/null 2>&1; then
@@ -272,26 +255,16 @@ pipeline {
                                     else
                                         DOCKER_BIN="docker compose"
                                     fi
-                                    echo "Khởi động container trên VPS..."
                                     \$DOCKER_BIN pull || true
                                     \$DOCKER_BIN down || true
                                     \$DOCKER_BIN up -d
-                                    docker ps | grep -E "hightech" || true
                                 '''
                                 """
-                            } else {
-                                bat """
-                                ssh -i "%SSH_KEY%" -o StrictHostKeyChecking=no %SSH_USER%@${vpsHost} "mkdir -p /root/hightech-project/backend"
-                                scp -i "%SSH_KEY%" -o StrictHostKeyChecking=no backend/docker-compose.yml %SSH_USER%@${vpsHost}:/root/hightech-project/backend/docker-compose.yml
-                                ssh -i "%SSH_KEY%" -o StrictHostKeyChecking=no %SSH_USER%@${vpsHost} "cd /root/hightech-project/backend && docker compose down && docker compose up -d"
-                                """
                             }
-
                             echo "🎉 Triển khai VPS thành công! Swagger: http://${vpsHost}:5000/swagger"
                         }
                     } catch (Exception e) {
                         echo "⚠️ Quá trình Deploy VPS gặp cảnh báo: ${e.message}"
-                        echo "Vui lòng kiểm tra lại địa chỉ VPS_HOST hoặc quyền truy cập của 'vps-ssh-key'."
                     }
                 }
             }
@@ -305,14 +278,14 @@ pipeline {
                 def renderUrl = rawRenderUrl.replaceAll('/+$', '')
                 def rawFrontendUrl = (params.RENDER_FRONTEND_URL ?: env.RENDER_FRONTEND_URL ?: "https://hightech-frontend.onrender.com").trim()
                 def frontendUrl = rawFrontendUrl.replaceAll('/+$', '')
-                def vpsHost = (params.VPS_HOST ?: env.VPS_HOST ?: "").trim()
+                def serverIp = (params.SERVER_IP ?: env.DEFAULT_SERVER_IP ?: "127.0.0.1").trim()
+                def vpsHost = (params.VPS_HOST ?: "").trim()
 
-                // Cập nhật mô tả hiển thị TRỰC TIẾP trên giao diện Web của Jenkins (Build History & Build Page)
                 def vpsHtmlBlock = ""
-                if (vpsHost != "") {
+                if (vpsHost != "" && (params.DEPLOY_TO_VPS == true)) {
                     vpsHtmlBlock = """
                         <hr style="margin: 6px 0; border: 0; border-top: 1px dashed #cbd5e1;"/>
-                        <div style="font-size: 13px; font-weight: bold; color: #1e3a8a; margin-bottom: 4px;">🖥️ VPS PRODUCTION SERVER (${vpsHost})</div>
+                        <div style="font-size: 13px; font-weight: bold; color: #1e3a8a; margin-bottom: 4px;">🖥️ VPS PRODUCTION (${vpsHost})</div>
                         <div style="font-size: 13px; line-height: 1.8;">
                             📚 <b>VPS Swagger:</b> <a href="http://${vpsHost}:5000/swagger" target="_blank" style="color: #2563eb; font-weight: bold; text-decoration: underline;">http://${vpsHost}:5000/swagger</a><br/>
                             💚 <b>VPS Health:</b> <a href="http://${vpsHost}:5000/health" target="_blank" style="color: #4f46e5; text-decoration: underline;">http://${vpsHost}:5000/health</a>
@@ -322,24 +295,31 @@ pipeline {
 
                 currentBuild.description = """
                     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; padding: 10px 14px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; margin: 6px 0;">
-                        <div style="font-size: 14px; font-weight: bold; color: #166534; margin-bottom: 6px;">🚀 TRẠNG THÁI TRIỂN KHAI CI/CD</div>
-                        <div style="font-size: 13px; line-height: 1.8;">
-                            🌐 <b>Render API:</b> <a href="${renderUrl}" target="_blank" style="color: #0284c7; font-weight: 600; text-decoration: underline;">${renderUrl}</a><br/>
-                            📚 <b>Swagger Docs:</b> <a href="${renderUrl}/swagger" target="_blank" style="color: #059669; font-weight: 600; text-decoration: underline;">${renderUrl}/swagger</a><br/>
-                            💚 <b>Health Check:</b> <a href="${renderUrl}/health" target="_blank" style="color: #4f46e5; text-decoration: underline;">${renderUrl}/health</a><br/>
-                            🖥️ <b>Frontend Web:</b> <a href="${frontendUrl}" target="_blank" style="color: #d97706; text-decoration: underline;">${frontendUrl}</a>
+                        <div style="font-size: 14px; font-weight: bold; color: #166534; margin-bottom: 6px;">🚀 ĐƯỜNG DẪN TRUY CẬP HỆ THỐNG</div>
+                        
+                        <div style="font-size: 13px; font-weight: bold; color: #0f766e; margin-bottom: 4px;">🌐 MÁY CHỦ LOCAL (IP: ${serverIp}):</div>
+                        <div style="font-size: 13px; line-height: 1.8; margin-left: 8px;">
+                            📚 <b>Swagger API:</b> <a href="http://${serverIp}:5000/swagger" target="_blank" style="color: #0284c7; font-weight: bold; text-decoration: underline;">http://${serverIp}:5000/swagger</a><br/>
+                            💚 <b>Health Check:</b> <a href="http://${serverIp}:5000/health" target="_blank" style="color: #059669; font-weight: bold; text-decoration: underline;">http://${serverIp}:5000/health</a><br/>
+                            🖥️ <b>Frontend Web:</b> <a href="http://${serverIp}:3000" target="_blank" style="color: #d97706; text-decoration: underline;">http://${serverIp}:3000</a>
+                        </div>
+
+                        <hr style="margin: 6px 0; border: 0; border-top: 1px dashed #cbd5e1;"/>
+                        <div style="font-size: 13px; font-weight: bold; color: #0369a1; margin-bottom: 4px;">☁️ CLOUD RENDER:</div>
+                        <div style="font-size: 13px; line-height: 1.8; margin-left: 8px;">
+                            🌐 <b>Render API:</b> <a href="${renderUrl}" target="_blank" style="color: #0284c7; text-decoration: underline;">${renderUrl}</a><br/>
+                            📚 <b>Render Swagger:</b> <a href="${renderUrl}/swagger" target="_blank" style="color: #059669; text-decoration: underline;">${renderUrl}/swagger</a>
                         </div>
                         ${vpsHtmlBlock}
                     </div>
                 """
 
                 def vpsLogSummary = ""
-                if (vpsHost != "") {
+                if (vpsHost != "" && (params.DEPLOY_TO_VPS == true)) {
                     vpsLogSummary = """
  🖥️ MÔI TRƯỜNG MÁY CHỦ VPS (${vpsHost}):
     👉 Swagger VPS:        http://${vpsHost}:5000/swagger
     👉 Health Check VPS:   http://${vpsHost}:5000/health
-    👉 API Base:           http://${vpsHost}:5000/api
 """
                 }
 
@@ -347,22 +327,21 @@ pipeline {
 ================================================================================================
                       🎉 PIPELINE CI/CD HOÀN TẤT THÀNH CÔNG! 🎉
 ================================================================================================
- 🌐 ĐƯỜNG DẪN TRUY CẬP TRÊN RENDER CLOUD (.onrender.com):
+ 🌐 ĐƯỜNG DẪN TRUY CẬP QUA IP TRỰC TIẾP (BẤM VÀO ĐƯỢC NGAY):
+    👉 Swagger API IP:      http://${serverIp}:5000/swagger
+    👉 Health Check IP:     http://${serverIp}:5000/health
+    👉 Frontend Web IP:     http://${serverIp}:3000
+    👉 Hoặc qua Localhost:  http://localhost:5000/swagger
+
+ ☁️ ĐƯỜNG DẪN TRÊN CLOUD RENDER (.onrender.com):
     👉 API Trang Chủ:       ${renderUrl}
     👉 Swagger API Docs:    ${renderUrl}/swagger
-    👉 API Health Check:    ${renderUrl}/health
-    👉 Frontend Web:        ${frontendUrl}
-${vpsLogSummary}
- 💻 ĐƯỜNG DẪN TRUY CẬP TRÊN LOCALHOST:
-    👉 Swagger Localhost:   http://localhost:5000/swagger
-    👉 Health Localhost:    http://localhost:5000/health
-    👉 Frontend Localhost:  http://localhost:3000
-================================================================================================
+${vpsLogSummary}================================================================================================
 """
             }
         }
         failure {
-            echo "❌ [THÔNG BÁO] Pipeline gặp lỗi ở một trong các giai đoạn. Hãy kiểm tra các dòng log ở trên để khắc phục!"
+            echo "❌ [THÔNG BÁO] Pipeline gặp lỗi ở một trong các giai đoạn. Hãy kiểm tra các dòng log ở trên!"
         }
     }
 }
