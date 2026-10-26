@@ -155,14 +155,14 @@ pipeline {
                             $DOCKER_COMPOSE_BIN down || true
 
                             echo "Khởi chạy container Backend API và Database mới..."
-                            $DOCKER_COMPOSE_BIN up -d
+                            $DOCKER_COMPOSE_BIN up -d --build
                             docker ps | grep -E "hightech" || true
                             '''
                         } else {
                             bat '''
                             cd backend
                             docker compose down || true
-                            docker compose up -d
+                            docker compose up -d --build
                             docker ps
                             '''
                         }

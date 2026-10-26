@@ -30,24 +30,30 @@ export default function LoginPage() {
     confirmPassword: '',
   });
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setIsLoading(true);
 
-    const res = login(loginForm.identifier, loginForm.password);
-    setIsLoading(false);
-
-    if (res.success) {
-      showToast('Đăng nhập thành công', res.message, 'success');
-      router.replace('/profile');
-    } else {
-      setErrorMessage(res.message);
-      showToast('Đăng nhập thất bại', res.message, 'error');
+    try {
+      const res = await login(loginForm.identifier, loginForm.password);
+      if (res.success) {
+        showToast('Đăng nhập thành công', res.message, 'success');
+        router.replace('/profile');
+      } else {
+        setErrorMessage(res.message);
+        showToast('Đăng nhập thất bại', res.message, 'error');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Không thể kết nối đến máy chủ';
+      setErrorMessage(message);
+      showToast('Đăng nhập thất bại', message, 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleRegisterSubmit = (e: React.FormEvent) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
 
@@ -59,21 +65,27 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
-    const res = register({
-      name: registerForm.name,
-      email: registerForm.email,
-      password: registerForm.password,
-      phone: registerForm.phone,
-      address: registerForm.address,
-    });
-    setIsLoading(false);
-
-    if (res.success) {
-      showToast('Đăng ký thành công', res.message, 'success');
-      router.replace('/profile');
-    } else {
-      setErrorMessage(res.message);
-      showToast('Đăng ký thất bại', res.message, 'error');
+    try {
+      const res = await register({
+        name: registerForm.name,
+        email: registerForm.email,
+        password: registerForm.password,
+        phone: registerForm.phone,
+        address: registerForm.address,
+      });
+      if (res.success) {
+        showToast('Đăng ký thành công', res.message, 'success');
+        router.replace('/profile');
+      } else {
+        setErrorMessage(res.message);
+        showToast('Đăng ký thất bại', res.message, 'error');
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Không thể kết nối đến máy chủ';
+      setErrorMessage(message);
+      showToast('Đăng ký thất bại', message, 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -159,14 +171,14 @@ export default function LoginPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => fillQuickAccount('admin', 'admin123')}
+                onClick={() => fillQuickAccount('admin@hightech.vn', 'admin123')}
                 className="flex items-center justify-between p-2 rounded-lg bg-surface border border-primary/40 hover:border-primary text-left transition-colors group"
               >
                 <div>
                   <div className="font-bold text-primary flex items-center gap-1">
                     <ShieldCheck size={12} /> Admin
                   </div>
-                  <div className="text-muted text-[11px]">admin / admin123</div>
+                  <div className="text-muted text-[11px]">admin@hightech.vn / admin123</div>
                 </div>
                 <ArrowRight size={12} className="text-muted group-hover:text-primary transition-transform group-hover:translate-x-0.5" />
               </button>
@@ -221,7 +233,7 @@ export default function LoginPage() {
                   {/* Email / Username */}
                   <div>
                     <label className="text-xs text-muted block mb-2 font-medium">
-                      Tên đăng nhập hoặc Email
+                      Email hoặc số điện thoại
                     </label>
                     <div className="relative">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
@@ -229,7 +241,7 @@ export default function LoginPage() {
                         type="text"
                         value={loginForm.identifier}
                         onChange={(e) => setLoginForm({ ...loginForm, identifier: e.target.value })}
-                        placeholder="admin hoặc your@email.com"
+                        placeholder="admin@hightech.vn hoặc 0905123456"
                         className="w-full bg-surface-light border border-border rounded-lg pl-11 pr-4 py-3 text-white text-sm placeholder:text-muted/50 focus:border-primary focus:outline-none transition-colors"
                         required
                       />

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -11,7 +12,8 @@ import {
   CreditCard,
   ArrowRight,
 } from "lucide-react";
-import { products, categories } from "@/data/products";
+import { categories } from "@/data/products";
+import { useAdminStore } from "@/store/adminStore";
 import ProductCard from "@/components/ProductCard";
 
 /* ───────────────────────── animation variants ───────────────────────── */
@@ -69,6 +71,12 @@ const features = [
 /* ═══════════════════════════════════════════════════════════════════════ */
 
 export default function HomePage() {
+  const { products, fetchProducts } = useAdminStore();
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
   return (
     <>
       {/* ─── 1. HERO BANNER ─────────────────────────────────────────── */}

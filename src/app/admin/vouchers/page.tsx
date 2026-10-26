@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Ticket, Trash2, X, Check } from "lucide-react";
 import { useAdminStore } from "@/store/adminStore";
 import { formatPrice } from "@/lib/utils";
 import { showToast } from "@/components/Toast";
 
 export default function AdminVouchersPage() {
-  const { vouchers, addVoucher, toggleVoucher, deleteVoucher } = useAdminStore();
+  const { vouchers, addVoucher, toggleVoucher, deleteVoucher, fetchVouchers } = useAdminStore();
+
+  useEffect(() => {
+    fetchVouchers();
+  }, [fetchVouchers]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [code, setCode] = useState("");

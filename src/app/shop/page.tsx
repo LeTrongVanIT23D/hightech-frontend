@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { SlidersHorizontal, X, ChevronDown, LayoutGrid, List, RotateCcw } from "lucide-react";
@@ -33,7 +33,11 @@ function ShopContent() {
   const initialCategory = slugMap[rawCategory.toLowerCase()] ?? (categoryTabs.includes(rawCategory) ? rawCategory : "Tất cả");
   const initialSearch = searchParams.get("search") || "";
 
-  const { products } = useAdminStore();
+  const { products, fetchProducts } = useAdminStore();
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const [activeCategory, setActiveCategory] = useState<string>(initialCategory);
   const [activeSort, setActiveSort] = useState("default");

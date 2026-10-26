@@ -76,8 +76,12 @@ export default function ProductDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const { products, setSizeGuideOpen } = useAdminStore();
+  const { products, setSizeGuideOpen, fetchProducts } = useAdminStore();
   const product = products.find((p) => p.id === id);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const addItem = useCartStore((s) => s.addItem);
   const { toggleItem, isInWishlist } = useWishlistStore();

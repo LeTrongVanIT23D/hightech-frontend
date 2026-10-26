@@ -18,6 +18,7 @@ import {
 import { useCartStore } from "@/store/cartStore";
 import { useOrderStore } from "@/store/orderStore";
 import { useAdminStore } from "@/store/adminStore";
+import { api } from "@/lib/api";
 import { formatPrice } from "@/lib/utils";
 import { showToast } from "@/components/Toast";
 
@@ -50,8 +51,24 @@ export default function CheckoutPage() {
   const shippingFee = subtotal >= 1000000 ? 0 : 30000;
   const grandTotal = subtotal - discountAmount + shippingFee;
 
-  const handleApplyVoucher = (e: React.FormEvent) => {
+  const handleApplyVoucher = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!voucherCode.trim()) return;
+
+    try {
+      const res = await api.vouchers.apply(voucherCode.trim(), subtotal);
+      if (res?.valid && res?.discountPercent) {
+        setAppliedVoucher({ code: voucherCode.trim().toUpperCase(), percent: res.discountPercent });
+        showToast("Áp dụng mã giảm giá thành công!", res.message, "success");
+        return;
+      } else if (res && !res.valid) {
+        showToast("Mã giảm giá không hợp lệ", res.message, "error");
+        return;
+      }
+    } catch {
+      // Fallback cục bộ
+    }
+
     const found = vouchers.find(
       (v) => v.code.toUpperCase() === voucherCode.trim().toUpperCase() && v.isActive
     );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useOrderStore, OrderStatus } from "@/store/orderStore";
 import { formatPrice } from "@/lib/utils";
@@ -8,8 +8,12 @@ import { showToast } from "@/components/Toast";
 import { Clock, Package, Truck, CheckCircle2, XCircle } from "lucide-react";
 
 export default function AdminOrdersPage() {
-  const { orders, updateOrderStatus } = useOrderStore();
+  const { orders, updateOrderStatus, fetchOrders } = useOrderStore();
   const [filterStatus, setFilterStatus] = useState<string>("all");
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   const filteredOrders = orders.filter(
     (o) => filterStatus === "all" || o.status === filterStatus

@@ -139,37 +139,42 @@ pipeline {
                 }
             }
             steps {
-                echo "🖥️ [Stage 5] Triển khai Backend API và Database lên Localhost / Server..."
+                echo "🖥️ [Stage 5] Triển khai Backend API, Database và Frontend lên Localhost / Server..."
                 script {
-                    try {
-                        if (isUnix()) {
-                            sh '''
-                            cd backend
-                            if command -v docker-compose >/dev/null 2>&1; then
-                                DOCKER_COMPOSE_BIN="docker-compose"
-                            else
-                                DOCKER_COMPOSE_BIN="docker compose"
-                            fi
+                    if (isUnix()) {
+                        sh '''
+                        if command -v docker-compose >/dev/null 2>&1; then
+                            DOCKER_COMPOSE_BIN="docker-compose"
+                        else
+                            DOCKER_COMPOSE_BIN="docker compose"
+                        fi
 
-                            echo "Dừng container cũ nếu đang chạy..."
-                            $DOCKER_COMPOSE_BIN down || true
+                        echo "Khởi chạy Backend API và Database..."
+                        cd backend
+                        $DOCKER_COMPOSE_BIN up -d --build
+                        cd ..
 
-                            echo "Khởi chạy container Backend API và Database mới..."
-                            $DOCKER_COMPOSE_BIN up -d
-                            docker ps | grep -E "hightech" || true
-                            '''
-                        } else {
-                            bat '''
-                            cd backend
-                            docker compose down || true
-                            docker compose up -d
-                            docker ps
-                            '''
-                        }
-                        echo "✅ Triển khai môi trường Localhost thành công!"
-                    } catch (Exception e) {
-                        echo "⚠️ Triển khai Localhost có cảnh báo: ${e.message}. Tiếp tục các bước tiếp theo..."
+                        echo "Build và khởi chạy Frontend Next.js..."
+                        $DOCKER_COMPOSE_BIN up -d --build
+                        echo "Kiểm tra trang chủ Frontend tại http://127.0.0.1:3000..."
+                        curl --fail --retry 10 --retry-delay 2 --retry-connrefused --max-time 10 http://127.0.0.1:3000/ -o /dev/null || echo "Frontend đang khởi động..."
+                        docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}"
+                        '''
+                    } else {
+                        bat '''
+                        echo Khởi chạy Backend API và Database...
+                        cd backend
+                        docker compose up -d --build
+                        cd ..
+
+                        echo Build va khoi chay Frontend Next.js...
+                        docker compose up -d --build
+                        echo Kiem tra trang chu Frontend tai http://127.0.0.1:3000...
+                        curl.exe --fail --retry 10 --retry-delay 2 --retry-connrefused --max-time 10 http://127.0.0.1:3000/ -o NUL || echo Frontend dang khoi dong...
+                        docker ps
+                        '''
                     }
+                    echo "✅ Backend, Database và Frontend đã được triển khai!"
                 }
             }
         }
@@ -395,7 +400,8 @@ pipeline {
     👉 Swagger API IP:      http://${serverIp}:5000/swagger
     👉 Health Check IP:     http://${serverIp}:5000/health
     👉 Frontend Web IP:     http://${serverIp}:3000
-    👉 Hoặc qua Localhost:  http://localhost:5000/swagger
+    👉 Frontend Localhost:  http://127.0.0.1:3000
+    👉 Swagger Localhost:   http://127.0.0.1:5000/swagger
 
  ☁️ ĐƯỜNG DẪN TRÊN CLOUD RENDER (.onrender.com):
     👉 API Trang Chủ:       ${renderUrl}

@@ -1,4 +1,20 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5100";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  role: "admin" | "user";
+}
+
+export interface AuthResponse {
+  success: boolean;
+  message: string;
+  token: string | null;
+  user: AuthUser | null;
+}
 
 async function fetchJson<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
@@ -19,12 +35,12 @@ export const api = {
   // Authentication
   auth: {
     login: (data: { identifier: string; password: string }) =>
-      fetchJson<any>("/api/auth/login", {
+      fetchJson<AuthResponse>("/api/auth/login", {
         method: "POST",
         body: JSON.stringify(data),
       }),
     register: (data: { name: string; email: string; password: string; phone?: string; address?: string }) =>
-      fetchJson<any>("/api/auth/register", {
+      fetchJson<AuthResponse>("/api/auth/register", {
         method: "POST",
         body: JSON.stringify(data),
       }),

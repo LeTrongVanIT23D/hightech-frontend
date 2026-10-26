@@ -1,4 +1,6 @@
 using Hightech.Api.Models;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Text.Json;
 
 namespace Hightech.Api.Data;
@@ -7,7 +9,36 @@ public static class DbInitializer
 {
     public static void Initialize(AppDbContext context)
     {
-        context.Database.EnsureCreated();
+        try
+        {
+            var databaseCreator = context.Database.GetService<IDatabaseCreator>() as RelationalDatabaseCreator;
+            if (databaseCreator != null)
+            {
+                if (!databaseCreator.Exists())
+                {
+                    databaseCreator.Create();
+                }
+                if (!databaseCreator.HasTables())
+                {
+                    databaseCreator.CreateTables();
+                }
+            }
+            else
+            {
+                context.Database.EnsureCreated();
+            }
+        }
+        catch (Exception)
+        {
+            try
+            {
+                context.Database.EnsureCreated();
+            }
+            catch
+            {
+                // Ignore if database or tables already exist
+            }
+        }
 
         // 1. Seed Users
         if (!context.Users.Any())

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ImageWithFallback from "@/components/ImageWithFallback";
 import { Plus, Search, Edit, Trash2, X, Check } from "lucide-react";
 import { useAdminStore } from "@/store/adminStore";
@@ -9,10 +9,14 @@ import { showToast } from "@/components/Toast";
 import { Product } from "@/data/products";
 
 export default function AdminProductsPage() {
-  const { products, addProduct, updateProduct, deleteProduct } = useAdminStore();
+  const { products, addProduct, updateProduct, deleteProduct, fetchProducts } = useAdminStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   // Form states
   const [name, setName] = useState("");

@@ -1,16 +1,30 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useOrderStore } from "@/store/orderStore";
 import { useAdminStore } from "@/store/adminStore";
+import { api } from "@/lib/api";
 import { formatPrice } from "@/lib/utils";
 import { DollarSign, ShoppingBag, Users, Package, TrendingUp, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminDashboardPage() {
-  const orders = useOrderStore((s) => s.orders);
-  const products = useAdminStore((s) => s.products);
+  const { orders, fetchOrders } = useOrderStore();
+  const { products, fetchProducts } = useAdminStore();
+  const [dbStats, setDbStats] = useState<any>(null);
 
-  const totalRevenue = orders.reduce((sum, o) => sum + (o.status !== "cancelled" ? o.total : 0), 0);
+  useEffect(() => {
+    fetchOrders();
+    fetchProducts();
+    api.dashboard.getStats().then((res) => {
+      if (res) setDbStats(res);
+    }).catch(() => {});
+  }, [fetchOrders, fetchProducts]);
+
+  const totalRevenue = dbStats?.totalRevenue ?? orders.reduce((sum, o) => sum + (o.status !== "cancelled" ? o.total : 0), 0);
+  const totalOrdersCount = dbStats?.totalOrders ?? orders.length;
+  const totalProductsCount = dbStats?.totalProducts ?? products.length;
+  const totalCustomersCount = dbStats?.totalCustomers ?? 1;
   const completedOrders = orders.filter((o) => o.status === "delivered").length;
   const pendingOrders = orders.filter((o) => o.status === "pending" || o.status === "processing").length;
 
@@ -50,7 +64,7 @@ export default function AdminDashboardPage() {
               <ShoppingBag size={20} />
             </div>
           </div>
-          <h3 className="font-display text-3xl text-white">{orders.length} Đơn</h3>
+          <h3 className="font-display text-3xl text-white">{totalOrdersCount} Đơn</h3>
           <span className="text-[11px] text-muted font-medium">
             {pendingOrders} đơn chờ xử lý
           </span>
@@ -63,7 +77,7 @@ export default function AdminDashboardPage() {
               <Package size={20} />
             </div>
           </div>
-          <h3 className="font-display text-3xl text-white">{products.length} SKU</h3>
+          <h3 className="font-display text-3xl text-white">{totalProductsCount} SKU</h3>
           <span className="text-[11px] text-muted font-medium">4 Danh mục chính</span>
         </div>
 
